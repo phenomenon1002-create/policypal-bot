@@ -46,9 +46,14 @@ function lineReply(token, messages) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + LINE_TOKEN }
     }, (res) => {
-      let d = ''; res.on('data', c => d += c); res.on('end', () => resolve(d));
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => {
+        console.log('LINE API response:', res.statusCode, d.slice(0,150));
+        resolve(d);
+      });
     });
-    req.on('error', reject);
+    req.on('error', (e) => { console.error('LINE API error:', e.message); reject(e); });
     req.write(body);
     req.end();
   });
