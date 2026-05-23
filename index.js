@@ -5,7 +5,7 @@ const https = require('https');
 const app = express();
 
 const LINE_SECRET = '1df0ef046c91ae10c044418b6a537093';
-const LINE_TOKEN = 'ssl5lO057bLY7TrVjNV8oOSwRL11d4v7mAMlEFfSPIKNBuFZWiKNrBcmH1mriZd1Y/kv0u7xz/1/N9h9RfK8GV2CmTFXh25AuEaGN7aN0IfDMJHbfxThEjRcVHcVJJ5MDd04t895/1O/w1cDnyilFU=';
+const LINE_TOKEN = 'ssl5IO057bLYBVdlqMwxNohdHHEjoJiUy9XM+ovP43Fb5ZruJmZCSqOZngje0wMhpH87GqJfk5NfZh5tfzgo3O D/kqUqxuCOC5h2oyYVAlrXZxJfcm+K6EdJiAzwpc7HCAHt3o55V8u3ozysbglZlgdB04t89/1O/w1cDnyilFU=';
 const SUPABASE_URL = 'https://bayjzxyacueqinjheljy.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJheWp6eHlhY3VlcWluamhlbGp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjYwNDEsImV4cCI6MjA5NDk0MjA0MX0.ZVvhMOkv5yA22z3nU84JzfLPt5dQkd2olHCj2jkLc_s';
 
