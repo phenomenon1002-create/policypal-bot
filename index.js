@@ -259,6 +259,7 @@ app.post('/webhook', async (req, res) => {
       console.log('Fetching user from Supabase...');
       let users = await sbFetch(`users?line_uid=eq.${uid}&select=*,clients(*)`);
       console.log('Users found:', users.length);
+      if (users.length) console.log('User data:', JSON.stringify(users[0]).slice(0,200));
 
       if (!users.length) {
         const phoneMatch = txt.match(/^09\d{8}$/);
@@ -280,9 +281,13 @@ app.post('/webhook', async (req, res) => {
       }
 
       const client = users[0].clients;
+      console.log('Client:', JSON.stringify(client)?.slice(0,100));
+      if (!client) { await lineReply(replyToken, text('找不到客戶資料，請重新綁定手機號碼')); continue; }
       const name = client.name;
       const cid = client.id;
+      console.log('Fetching policies for:', cid);
       const p = await sbFetch(`policies?client_id=eq.${cid}&select=*`);
+      console.log('Policies found:', p.length);
 
       // ── 保障健診 ──
       if (txt.includes('健診') || txt.includes('雙十字') || txt.includes('保障分析') || txt.includes('缺口')) {
