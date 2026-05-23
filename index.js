@@ -237,9 +237,16 @@ function buildHealthFlex(client, pols) {
 
 app.post('/webhook', async (req, res) => {
   res.sendStatus(200);
+  console.log('Webhook received!', new Date().toISOString());
+  console.log('Events:', JSON.stringify(req.body?.events?.map(e => ({type:e.type, msg:e.message?.text})) || []));
+  
   const sig = req.headers['x-line-signature'];
   const hmac = crypto.createHmac('sha256', LINE_SECRET).update(req.rawBody).digest('base64');
-  if (sig !== hmac) return;
+  if (sig !== hmac) {
+    console.log('Signature mismatch! sig:', sig?.slice(0,10), 'hmac:', hmac?.slice(0,10));
+    return;
+  }
+  console.log('Signature OK!');
 
   for (const event of req.body.events || []) {
     if (event.type !== 'message' || event.message.type !== 'text') continue;
