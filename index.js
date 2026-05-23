@@ -253,9 +253,12 @@ app.post('/webhook', async (req, res) => {
     const uid = event.source.userId;
     const txt = event.message.text.trim();
     const replyToken = event.replyToken;
+    console.log('Processing msg:', txt, 'uid:', uid.slice(0,8));
 
     try {
+      console.log('Fetching user from Supabase...');
       let users = await sbFetch(`users?line_uid=eq.${uid}&select=*,clients(*)`);
+      console.log('Users found:', users.length);
 
       if (!users.length) {
         const phoneMatch = txt.match(/^09\d{8}$/);
@@ -355,8 +358,8 @@ app.post('/webhook', async (req, res) => {
       }
 
     } catch (e) {
-      console.error(e);
-      await lineReply(replyToken, text('系統忙碌中，請稍後再試'));
+      console.error('ERROR:', e.message, e.stack?.slice(0,200));
+      try { await lineReply(replyToken, text('系統忙碌中，請稍後再試')); } catch(e2) { console.error('Reply failed:', e2.message); }
     }
   }
 });
