@@ -37,6 +37,7 @@ function sbFetch(path, method = 'GET', body = null) {
 }
 
 function lineReply(token, messages) {
+  console.log('lineReply called, token:', token?.slice(0,10), 'msgType:', Array.isArray(messages)?messages[0]?.type:messages?.type);
   const body = JSON.stringify({ replyToken: token, messages: Array.isArray(messages) ? messages : [messages] });
   return new Promise((resolve, reject) => {
     const req = https.request({
@@ -290,9 +291,13 @@ app.post('/webhook', async (req, res) => {
       console.log('Policies found:', p.length);
 
       // ── 保障健診 ──
+      console.log('Checking keywords for:', txt);
       if (txt.includes('健診') || txt.includes('雙十字') || txt.includes('保障分析') || txt.includes('缺口')) {
+        console.log('Building health flex...');
         const flexMsg = buildHealthFlex(client, p);
+        console.log('Sending flex message...');
         await lineReply(replyToken, flexMsg);
+        console.log('Flex sent!');
       }
       // ── 住院日額 ──
       else if (txt.includes('住院') || txt.includes('日額')) {
@@ -359,6 +364,7 @@ app.post('/webhook', async (req, res) => {
       }
       // ── 預設選單 ──
       else {
+        console.log('Sending default menu...');
         await lineReply(replyToken, text(`嗨，${name}！🐾\n\n可以查詢：\n🏥 住院日額\n🔪 開刀手術\n🎗️ 確診癌症\n👶 生育給付\n📋 所有保單\n📅 繳費時程\n🔍 保障健診\n\n直接輸入關鍵字即可！`));
       }
 
