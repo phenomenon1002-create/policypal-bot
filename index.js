@@ -38,6 +38,41 @@ async function replyMsg(token, messages) {
   });
 }
 
+async function generateImage(data) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify(data);
+    const req = https.request({
+      hostname: 'policypal-image.vercel.app',
+      path: '/api/generate',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+    }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(d);
+          if (result.url) resolve(result.url);
+          else reject(new Error(d));
+        } catch(e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.write(body); req.end();
+  });
+}
+
+async function pushMsg(uid, messages) {
+  const body = JSON.stringify({ to: uid, messages: Array.isArray(messages) ? messages : [messages] });
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.line.me', path: '/v2/bot/message/push', method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CHANNEL_TOKEN }
+    }, res => { let d=''; res.on('data',c=>d+=c); res.on('end',()=>resolve(d)); });
+    req.on('error', reject);
+    req.write(body); req.end();
+  });
+}
+
 function flexRow(label, value, valueColor='#1a56db') {
   return {
     type: 'box', layout: 'horizontal', paddingAll: '10px',
@@ -309,8 +344,50 @@ async function handleMsg(event) {
     const totalLife = policies.reduce((s,p) => s+(p.life_insurance||0), 0);
     const totalLtc = policies.reduce((s,p) => s+(p.ltc_monthly||0), 0);
     const totalAccDeath = policies.reduce((s,p) => s+(p.accident_death||0), 0);
+    const totalSurgery = policies.reduce((s,p) => s+(p.surgery_benefit||0), 0);
+    const totalInpatient = policies.reduce((s,p) => s+(p.inpatient_benefit||0), 0);
+    const totalFracture = policies.reduce((s,p) => s+(p.fracture_benefit||0), 0);
+    const totalAccident = policies.reduce((s,p) => s+(p.accident_outpatient||0), 0);
+    const totalDisability = policies.reduce((s,p) => s+(p.disability_benefit||0), 0);
     const hasMaternity = policies.some(p => p.maternity_benefit > 0);
     const hasDisability = policies.some(p => p.type==='失能險');
+    
+    // 先傳送處理中訊息
+    await replyMsg(token, { type: 'text', text: '🐾 保寶正在生成您的保障分析圖片...\n請稍候片刻！' });
+    
+    // 呼叫圖片生成API
+    try {
+      let age = '未填';
+      const clientFull = await sb(`clients?id=eq.${user.client_id}&select=*`);
+      if (clientFull[0]?.birthdate) {
+        const bd = new Date(clientFull[0].birthdate);
+        age = Math.floor((new Date()-bd)/(365.25*24*3600*1000)) + '歲';
+      }
+      
+      const imgData = {
+        name, age,
+        daily: totalDaily, surgeryFixed: totalSurgery,
+        inpatient: totalInpatient, fracture: totalFracture,
+        accident: totalAccident, accDeath: totalAccDeath,
+        disability: totalDisability, critical: totalCritical,
+        cancer: totalLump, ltc: totalLtc, life: totalLife
+      };
+      
+      const imgUrl = await generateImage(imgData);
+      
+      // 用push message傳圖片（因為reply token已用掉）
+      await pushMsg(uid, [
+        { type: 'image', originalContentUrl: imgUrl, previewImageUrl: imgUrl },
+        { type: 'text', text: '以上是您的醫療雙十字保障分析 🏥\n如需調整保障，請聯繫您的業務員 💪',
+          quickReply: quickReply([{label:'所有保單',text:'所有保單'},{label:'回主選單',text:'選單'}]) }
+      ]);
+      return;
+    } catch(imgErr) {
+      console.error('Image generation failed:', imgErr.message);
+      // 如果圖片生成失敗，用文字版備援
+    }
+    
+    const hasDisability2 = hasDisability;
 
     let score = 0;
     if (totalDaily >= 3000) score += 25; else if (totalDaily >= 1500) score += 15; else if (totalDaily > 0) score += 5;
